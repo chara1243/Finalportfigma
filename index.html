@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charan Bhattarai — Environmental Researcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --bg: #faf9f6;
+            --text: #171717;
+            --primary: #059669;
+            --accent: #c2410c;
+            --muted: #57534e;
+            --surface: #ffffff;
+            --border: #e5e5e5;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            cursor: none;
+        }
+        
+        h1, h2, h3, .display {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+        }
+        
+        .custom-cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+            mix-blend-mode: difference;
+        }
+        
+        .custom-cursor.hover {
+            transform: scale(2.5);
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        @media (max-width: 768px) {
+            body { cursor: auto; }
+            .custom-cursor { display: none; }
+        }
+        
+        /* Grain texture overlay */
+        .grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9000;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        
+        /* Text reveal animation */
+        .reveal-text {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .reveal-text.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Marquee */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+        
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        /* Bento Grid */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .bento-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bento-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+        
+        .bento-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .bento-card:hover::before {
+            opacity: 1;
+        }
+        
+        /* Gradient text */
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Replit embed placeholder */
+        .replit-frame {
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            border-radius: 1rem;
+            border: 1px solid #30363d;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .replit-dots {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+        
+        /* Timeline */
+        .timeline-line {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: -5px;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            border: 2px solid var(--bg);
+        }
+        
+        /* Chart containers */
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        /* Glitch effect on hover */
+        .glitch-hover:hover {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+        }
+        
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+        
+        /* Magnetic button */
+        .magnetic {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-emerald-200 selection:text-emerald-900">
+
+    <div class="custom-cursor" id="cursor"></div>
+    <div class="grain"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 top-0 left-0 px-6 py-6 mix-blend-difference text-white" id="nav">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold tracking-tighter hover-trigger">CB.</a>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-wider">
+                <a href="#work" class="hover:text-emerald-400 transition hover-trigger">Works</a>
+                <a href="#data" class="hover:text-emerald-400 transition hover-trigger">Data</a>
+                <a href="#replit" class="hover:text-emerald-400 transition hover-trigger">Replit</a>
+                <a href="#contact" class="px-6 py-2 border border-white/30 rounded-full hover:bg-white hover:text-black transition hover-trigger">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="min-h-screen flex flex-col justify-center px-6 pt-32 pb-20 relative overflow-hidden">
+        <!-- Background geometric shapes -->
+        <div class="absolute top-20 right-10 w-96 h-96 bg-emerald-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+        <div class="absolute bottom-20 left-10 w-64 h-64 bg-orange-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto w-full relative z-10">
+            <div class="grid lg:grid-cols-12 gap-8 items-end">
+                <div class="lg:col-span-8 space-y-8">
+                    <div class="reveal-text active">
+                        <p class="text-sm uppercase tracking-[0.3em] text-stone-500 font-medium mb-4">Environmental Science Researcher</p>
+                        <h1 class="text-6xl md:text-8xl lg:text-9xl leading-[0.85] tracking-tight display">
+                            CHARAN<br>
+                            <span class="text-gradient italic font-normal">BHATTARAI</span>
+                        </h1>
+                    </div>
+                    
+                    <div class="reveal-text active" style="transition-delay: 0.1s">
+                        <p class="text-xl md:text-2xl text-stone-600 max-w-2xl leading-relaxed">
+                            Investigating air quality, water resources & climate adaptation through data-driven environmental research at Tribhuvan University.
+                        </p>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-4 reveal-text active" style="transition-delay: 0.2s">
+                        <a href="#replit" class="magnetic px-8 py-4 bg-stone-900 text-white rounded-full font-medium hover:bg-emerald-600 transition flex items-center gap-2 hover-trigger">
+                            View Replit Projects <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#data" class="magnetic px-8 py-4 border-2 border-stone-300 rounded-full font-medium hover:border-emerald-600 hover:text-emerald-600 transition hover-trigger">
+                            Research Data
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-4 reveal-text active" style="transition-delay: 0.3s">
+                    <div class="bento-card bg-emerald-50 border-emerald-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-5xl font-bold text-emerald-800">03</span>
+                            <span class="px-3 py-1 bg-emerald-600 text-white text-xs rounded-full uppercase tracking-wider">Publications</span>
+                        </div>
+                        <p class="text-emerald-900 font-medium mb-2">Peer-reviewed research on water quality & climate perception</p>
+                        <div class="w-full h-px bg-emerald-200 my-3"></div>
+                        <div class="flex justify-between text-sm text-emerald-700">
+                            <span>JIST</span>
+                            <span>Physics & Chemistry</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Marquee -->
+            <div class="mt-32 border-t border-b border-stone-300 py-4 marquee-container reveal-text" style="transition-delay: 0.4s">
+                <div class="marquee-content text-stone-400 uppercase tracking-widest text-sm">
+                    MSc Environmental Science • Air Quality Monitoring • Water Resource Management • GIS & Remote Sensing • Climate Adaptation • Research Assistant • Tribhuvan University • Kathmandu, Nepal • JENESYS SAARC 2025 •
+                    MSc Environmental Science • Air Quality Monitoring • Water Resource Management • GIS & Remote Sensing • Climate Adaptation • Research Assistant • Tribhuvan University • Kathmandu, Nepal • JENESYS SAARC 2025 •
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Live Data Visualization Section -->
+    <section id="data" class="py-32 px-6 bg-white relative">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 reveal-text">
+                <div>
+                    <h2 class="text-5xl md:text-7xl display mb-4">Research<br><span class="italic font-normal">Analytics</span></h2>
+                    <p class="text-stone-600 max-w-md text-lg">Interactive visualization of field data from ongoing environmental monitoring projects.</p>
+                </div>
+                <div class="mt-6 md:mt-0 flex gap-2">
+                    <span class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <span class="text-xs uppercase tracking-widest text-stone-500">Live Data</span>
+                </div>
+            </div>
+
+            <div class="bento-grid">
+                <!-- Chart 1: Air Quality -->
+                <div class="col-span-12 md:col-span-7 bento-card reveal-text">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Indoor Air Quality Assessment</h3>
+                            <p class="text-sm text-stone-500">PM2.5 Concentration by Cooking Fuel Type</p>
+                        </div>
+                        <span class="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">CRITICAL</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="airChart"></canvas>
+                    </div>
+                    <p class="text-xs text-stone-400 mt-4">Source: Smoke-Free Homes Nepal Research Project (2024)</p>
+                </div>
+
+                <!-- Chart 2: Skills Radar -->
+                <div class="col-span-12 md:col-span-5 bento-card reveal-text" style="transition-delay: 0.1s">
+                    <h3 class="text-xl font-bold mb-6">Technical Competencies</h3>
+                    <div class="chart-wrapper" style="height: 260px;">
+                        <canvas id="skillsChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs text-stone-600">
+                        <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span>Advanced Level</div>
+                        <div class="flex items-center gap-2"><span class="w-2 h-2 bg-orange-500 rounded-full"></span>Intermediate</div>
+                    </div>
+                </div>
+
+                <!-- Chart 3: Water Quality -->
+                <div class="col-span-12 md:col-span-6 bento-card reveal-text" style="transition-delay: 0.2s">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold">Phoksundo Lake Analysis</h3>
+                        <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">PUBLISHED</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="waterChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="col-span-12 md:col-span-6 grid grid-cols-2 gap-4">
+                    <div class="bento-card bg-stone-900 text-white reveal-text" style="transition-delay: 0.3s">
+                        <p class="text-4xl font-bold mb-2">8+</p>
+                        <p class="text-stone-400 text-sm">Research Projects Completed</p>
+                    </div>
+                    <div class="bento-card border-orange-300 bg-orange-50 reveal-text" style="transition-delay: 0.4s">
+                        <p class="text-4xl font-bold text-orange-900 mb-2">2025</p>
+                        <p class="text-orange-700 text-sm">JENESYS SAARC Participant</p>
+                    </div>
+                    <div class="col-span-2 bento-card bg-gradient-to-r from-emerald-600 to-teal-600 text-white reveal-text hover-trigger" style="transition-delay: 0.5s">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm uppercase tracking-widest opacity-80 mb-1">Current Focus</p>
+                                <p class="text-2xl font-bold">Masters Thesis</p>
+                                <p class="text-emerald-100">Indoor Air Quality in Bagmati Province</p>
+                            </div>
+                            <i data-lucide="flask-conical" class="w-12 h-12 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Replit Showcase Section -->
+    <section id="replit" class="py-32 px-6 bg-stone-100 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-5">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, #171717 1px, transparent 0); background-size: 40px 40px;"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto relative z-10">
+            <div class="mb-16 reveal-text">
+                <h2 class="text-5xl md:text-7xl display mb-4">Digital<br><span class="italic font-normal">Portfolio</span></h2>
+                <p class="text-stone-600 text-lg max-w-2xl">Interactive web applications and data visualization tools built on Replit.</p>
+            </div>
+
+            <!-- Replit Embed Card -->
+            <div class="replit-frame p-8 md:p-12 reveal-text hover-trigger">
+                <div class="replit-dots">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-yellow"></div>
+                    <div class="dot dot-green"></div>
+                </div>
+                
+                <div class="mt-8 grid md:grid-cols-2 gap-12 items-center">
+                    <div class="text-white">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-mono mb-6 border border-white/10">
+                            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            Live on Replit
+                        </div>
+                        <h3 class="text-4xl md:text-5xl font-bold mb-4 display">Portfolio Website</h3>
+                        <p class="text-gray-400 text-lg mb-6 leading-relaxed">
+                            Interactive showcase of research projects, data visualization tools, and environmental monitoring dashboards. Built with modern web technologies.
+                        </p>
+                        <div class="flex flex-wrap gap-3 mb-8">
+                            <span class="px-3 py-1 bg-white/5 border border-white/10 rounded text-xs text-gray-300">React</span>
+                            <span class="px-3 py-1 bg-white/5 border border-white/10 rounded text-xs text-gray-300">Tailwind CSS</span>
+                            <span class="px-3 py-1 bg-white/5 border border-white/10 rounded text-xs text-gray-300">Data Viz</span>
+                            <span class="px-3 py-1 bg-white/5 border border-white/10 rounded text-xs text-gray-300">Responsive</span>
+                        </div>
+                        <a href="https://chayapa-portfolio--charanbhattarai.replit.app/" target="_blank" class="inline-flex items-center gap-3 px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg font-medium transition group">
+                            Visit Replit Profile
+                            <i data-lucide="external-link" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Code Preview Visual -->
+                    <div class="bg-black/40 rounded-lg p-6 font-mono text-sm text-gray-300 border border-white/10 overflow-hidden">
+                        <div class="flex items-center gap-2 mb-4 text-xs text-gray-500 border-b border-white/10 pb-2">
+                            <span>App.jsx</span>
+                        </div>
+                        <pre class="overflow-x-auto">
+<span class="text-purple-400">import</span> { useState } <span class="text-purple-400">from</span> <span class="text-green-400">'react'</span>;
+<span class="text-purple-400">import</span> { Chart } <span class="text-purple-400">from</span> <span class="text-green-400">'chart.js'</span>;
+
+<span class="text-blue-400">export default function</span> <span class="text-yellow-400">ResearchDashboard</span>() {
+  <span class="text-blue-400">const</span> [data, setData] = <span class="text-yellow-400">useState</span>({
+    pm25: [<span class="text-orange-400">450</span>, <span class="text-orange-400">180</span>, <span class="text-emerald-400">45</span>],
+    location: <span class="text-green-400">'Bagmati Province'</span>
+  });
+
+  <span class="text-gray-500">// Environmental monitoring logic</span>
+  <span class="text-blue-400">return</span> (
+    &lt;<span class="text-yellow-400">Dashboard</span> data={data} /&gt;
+  );
+}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Replit Links -->
+            <div class="grid md:grid-cols-3 gap-6 mt-8 reveal-text">
+                <a href="https://chayapa-portfolio--charanbhattarai.replit.app/" target="_blank" class="bento-card hover:bg-stone-50 group cursor-pointer">
+                    <i data-lucide="globe" class="w-8 h-8 text-emerald-600 mb-4 group-hover:scale-110 transition-transform"></i>
+                    <h4 class="text-lg font-bold mb-1">Live Portfolio</h4>
+                    <p class="text-sm text-stone-500">chayapa-portfolio.replit.app</p>
+                </a>
+                <div class="bento-card bg-stone-200/50 border-dashed border-2 border-stone-300 flex items-center justify-center">
+                    <p class="text-stone-500 text-center text-sm">
+                        <i data-lucide="plus" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                        More projects coming soon
+                    </p>
+                </div>
+                <div class="bento-card bg-stone-200/50 border-dashed border-2 border-stone-300 flex items-center justify-center">
+                    <p class="text-stone-500 text-center text-sm">
+                        <i data-lucide="code-2" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                        Interactive tools in development
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Research Projects Grid -->
+    <section id="work" class="py-32 px-6 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-16 reveal-text">
+                <h2 class="text-5xl md:text-7xl display mb-4">Selected<br><span class="italic font-normal">Works</span></h2>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Project 1 -->
+                <div class="group cursor-pointer reveal-text">
+                    <div class="border-t border-stone-300 py-8 grid md:grid-cols-12 gap-8 items-center hover:bg-stone-50 transition px-4 -mx-4 rounded-xl">
+                        <div class="md:col-span-1 text-4xl font-light text-stone-300 group-hover:text-emerald-600 transition">01</div>
+                        <div class="md:col-span-5">
+                            <h3 class="text-2xl md:text-3xl font-bold mb-2 group-hover:text-emerald-800 transition">Smoke-Free Homes Nepal</h3>
+                            <p class="text-stone-600">Indoor air pollution mitigation through technological & socio-economic interventions</p>
+                        </div>
+                        <div class="md:col-span-3 flex gap-2 flex-wrap">
+                            <span class="px-3 py-1 bg-stone-200 text-stone-700 text-xs rounded-full">Air Quality</span>
+                            <span class="px-3 py-1 bg-stone-200 text-stone-700 text-xs rounded-full">Public Health</span>
+                        </div>
+                        <div class="md:col-span-3 text-right">
+                            <span class="text-sm text-stone-500 block">2024 — Present</span>
+                            <span class="text-emerald-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">View Details →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="group cursor-pointer reveal-text">
+                    <div class="border-t border-stone-300 py-8 grid md:grid-cols-12 gap-8 items-center hover:bg-stone-50 transition px-4 -mx-4 rounded-xl">
+                        <div class="md:col-span-1 text-4xl font-light text-stone-300 group-hover:text-blue-600 transition">02</div>
+                        <div class="md:col-span-5">
+                            <h3 class="text-2xl md:text-3xl font-bold mb-2 group-hover:text-blue-800 transition">Phoksundo Lake Hydrochemistry</h3>
+                            <p class="text-stone-600">Water quality assessment of Higher Himalayan Ramsar Site (Dolpa)</p>
+                        </div>
+                        <div class="md:col-span-3 flex gap-2 flex-wrap">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Published</span>
+                            <span class="px-3 py-1 bg-stone-200 text-stone-700 text-xs rounded-full">Water Quality</span>
+                        </div>
+                        <div class="md:col-span-3 text-right">
+                            <span class="text-sm text-stone-500 block">Sep 2024</span>
+                            <span class="text-blue-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">Read Paper →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 3 -->
+                <div class="group cursor-pointer reveal-text">
+                    <div class="border-t border-stone-300 py-8 grid md:grid-cols-12 gap-8 items-center hover:bg-stone-50 transition px-4 -mx-4 rounded-xl border-b">
+                        <div class="md:col-span-1 text-4xl font-light text-stone-300 group-hover:text-orange-600 transition">03</div>
+                        <div class="md:col-span-5">
+                            <h3 class="text-2xl md:text-3xl font-bold mb-2 group-hover:text-orange-800 transition">Emission Inventory Project</h3>
+                            <p class="text-stone-600">World Bank air quality monitoring initiative for South Asian region</p>
+                        </div>
+                        <div class="md:col-span-3 flex gap-2 flex-wrap">
+                            <span class="px-3 py-1 bg-stone-200 text-stone-700 text-xs rounded-full">Consultancy</span>
+                            <span class="px-3 py-1 bg-stone-200 text-stone-700 text-xs rounded-full">Policy</span>
+                        </div>
+                        <div class="md:col-span-3 text-right">
+                            <span class="text-sm text-stone-500 block">Jan 2024</span>
+                            <span class="text-orange-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Education Timeline -->
+    <section class="py-32 px-6 bg-stone-100">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-5xl md:text-7xl display mb-16 reveal-text">Academic<br><span class="italic font-normal">Background</span></h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="relative pl-8 space-y-12 reveal-text">
+                    <div class="timeline-line"></div>
+                    
+                    <div class="relative">
+                        <div class="timeline-dot"></div>
+                        <div class="bento-card bg-white">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-xs uppercase tracking-widest text-emerald-600 font-bold">Current</span>
+                                <span class="text-sm text-stone-500">2023 — 2025</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">MSc Environmental Science</h3>
+                            <p class="text-stone-600 mb-3">Central Department of Environmental Science, Tribhuvan University</p>
+                            <p class="text-sm text-stone-500 mb-4">Thesis: Impact of Household Cooking Practices on Indoor Air Quality in Bagmati Province</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded">KCRE-CAS Grant</span>
+                                <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded">Finland Thesis Grant</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <div class="timeline-dot" style="background: #c2410c; box-shadow: 0 0 0 2px #c2410c;"></div>
+                        <div class="bento-card bg-white">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-xs uppercase tracking-widest text-orange-600 font-bold">Graduated</span>
+                                <span class="text-sm text-stone-500">2016 — 2020</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">BSc Environmental Science</h3>
+                            <p class="text-stone-600 mb-3">Mechi Multiple Campus, Tribhuvan University</p>
+                            <p class="text-sm text-stone-500">Thesis: Composition of Invasive Alien Plant Species in Irautar Community Forest</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 reveal-text">
+                    <h3 class="text-2xl font-bold mb-6">Technical Arsenal</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">GIS & Remote Sensing</span>
+                                <span class="text-stone-500">90%</span>
+                            </div>
+                            <div class="h-2 bg-stone-200 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-600 rounded-full" style="width: 90%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">R Programming</span>
+                                <span class="text-stone-500">85%</span>
+                            </div>
+                            <div class="h-2 bg-stone-200 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-600 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">Air Quality Equipment</span>
+                                <span class="text-stone-500">95%</span>
+                            </div>
+                            <div class="h-2 bg-stone-200 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-600 rounded-full" style="width: 95%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="font-medium">Python</span>
+                                <span class="text-stone-500">60%</span>
+                            </div>
+                            <div class="h-2 bg-stone-200 rounded-full overflow-hidden">
+                                <div class="h-full bg-orange-500 rounded-full" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 p-6 bg-stone-900 text-white rounded-2xl">
+                        <h4 class="font-bold mb-4 text-emerald-400">Certifications</h4>
+                        <ul class="space-y-2 text-sm text-stone-300">
+                            <li class="flex items-center gap-2"><span class="text-emerald-500">✓</span> Elsevier AI Foundations & Responsible AI</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-500">✓</span> MDPI Drones for Natural Hazards</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-500">✓</span> USAID Clean Air Management</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-500">✓</span> JENESYS SAARC 2025 Participant</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Publications -->
+    <section class="py-32 px-6 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-5xl md:text-7xl display mb-16 reveal-text">Publications</h2>
+            
+            <div class="grid gap-6">
+                <a href="https://scholar.google.com/citations?user=voRs6eAAAAAJ" target="_blank" class="group block reveal-text">
+                    <div class="p-8 border border-stone-200 rounded-2xl hover:border-emerald-500 hover:bg-emerald-50/30 transition">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <span class="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">JIST 2024</span>
+                                    <span class="text-xs text-stone-400">Water Quality</span>
+                                </div>
+                                <h3 class="text-xl font-bold text-stone-900 group-hover:text-emerald-800 transition mb-2">
+                                    Hydrochemistry and Water Quality of Phoksundo Lake (Dolpa): Insights from the Higher Himalaya Ramsar Site of Nepal
+                                </h3>
+                                <p class="text-stone-600 text-sm">Journal of Institute of Science and Technology, Volume 30, Issue 1</p>
+                            </div>
+                            <i data-lucide="arrow-up-right" class="w-6 h-6 text-stone-300 group-hover:text-emerald-600 transition"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="group block reveal-text" style="transition-delay: 0.1s">
+                    <div class="p-8 border border-stone-200 rounded-2xl hover:border-orange-500 hover:bg-orange-50/30 transition">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-bold rounded-full">Education</span>
+                            <span class="text-xs text-stone-400">Climate Perception</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-stone-900 mb-2">
+                            Perception of Climate Change of Secondary Level Students in Mechinagar, Jhapa, Nepal
+                        </h3>
+                        <p class="text-stone-600 text-sm">Perspectives on Higher Education 15(01)</p>
+                    </div>
+                </div>
+
+                <div class="group block reveal-text" style="transition-delay: 0.2s">
+                    <div class="p-8 border border-stone-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50/30 transition">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">Earth Sciences</span>
+                            <span class="text-xs text-stone-400">Wetlands</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-stone-900 mb-2">
+                            Evaluation of Water Quality in Lowland Ramsar Wetlands: Insights on Hydrochemistry Analysis-SDGs Nexus
+                        </h3>
+                        <p class="text-stone-600 text-sm">Physics and Chemistry of the Earth, Parts A/B/C</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <a href="https://scholar.google.com/citations?user=voRs6eAAAAAJ" target="_blank" class="inline-flex items-center gap-2 text-emerald-700 font-medium hover:gap-3 transition">
+                    Visit Google Scholar Profile <i data-lucide="external-link" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="py-32 px-6 bg-stone-900 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-emerald-900/20 to-transparent"></div>
+        
+        <div class="max-w-7xl mx-auto relative z-10">
+            <div class="grid md:grid-cols-2 gap-16 items-center">
+                <div class="reveal-text">
+                    <h2 class="text-5xl md:text-7xl display mb-6">Let's <span class="italic text-emerald-400">Collaborate</span></h2>
+                    <p class="text-stone-400 text-lg mb-8 leading-relaxed">
+                        Open for research collaborations in air quality monitoring, water resource management, and climate adaptation studies.
+                    </p>
+                    
+                    <div class="space-y-4">
+                        <a href="mailto:cbhattarai54@gmail.com" class="flex items-center gap-4 text-2xl font-bold hover:text-emerald-400 transition group">
+                            <i data-lucide="mail" class="w-8 h-8 text-emerald-500"></i>
+                            cbhattarai54@gmail.com
+                            <i data-lucide="arrow-right" class="w-6 h-6 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-2"></i>
+                        </a>
+                        <div class="flex items-center gap-4 text-stone-400">
+                            <i data-lucide="map-pin" class="w-6 h-6 text-emerald-500"></i>
+                            Kirtipur, Kathmandu, Nepal
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reveal-text" style="transition-delay: 0.2s">
+                    <div class="grid grid-cols-2 gap-4">
+                        <a href="https://chayapa-portfolio--charanbhattarai.replit.app/" target="_blank" class="p-6 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition group hover-trigger text-center">
+                            <i data-lucide="code-2" class="w-8 h-8 mx-auto mb-3 text-emerald-400 group-hover:scale-110 transition"></i>
+                            <span class="font-medium">Replit</span>
+                        </a>
+                        <a href="https://scholar.google.com/citations?user=voRs6eAAAAAJ" target="_blank" class="p-6 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition group hover-trigger text-center">
+                            <i data-lucide="book-open" class="w-8 h-8 mx-auto mb-3 text-emerald-400 group-hover:scale-110 transition"></i>
+                            <span class="font-medium">Scholar</span>
+                        </a>
+                        <a href="http://www.charanbhattarai.com.np" target="_blank" class="p-6 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition group hover-trigger text-center">
+                            <i data-lucide="globe" class="w-8 h-8 mx-auto mb-3 text-emerald-400 group-hover:scale-110 transition"></i>
+                            <span class="font-medium">Website</span>
+                        </a>
+                        <div class="p-6 bg-emerald-600 rounded-xl text-center">
+                            <i data-lucide="download" class="w-8 h-8 mx-auto mb-3 text-white"></i>
+                            <span class="font-medium">Download CV</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-8 px-6 bg-black text-stone-600 text-sm text-center border-t border-stone-900">
+        <p>&copy; 2024 Charan Bhattarai. Built with precision.</p>
+    </footer>
+
+    <script>
+        // Custom cursor
+        const cursor = document.getElementById('cursor');
+        const triggers = document.querySelectorAll('.hover-trigger');
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+        
+        triggers.forEach(trigger => {
+            trigger.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            trigger.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        // Reveal animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal-text').forEach(el => observer.observe(el));
+
+        // Chart.js defaults
+        Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+        Chart.defaults.color = '#57534e';
+        
+        // Air Quality Chart
+        const ctxAir = document.getElementById('airChart').getContext('2d');
+        new Chart(ctxAir, {
+            type: 'bar',
+            data: {
+                labels: ['Traditional\nStove', 'Improved\nStove', 'LPG', 'Biogas'],
+                datasets: [{
+                    label: 'PM2.5 (μg/m³)',
+                    data: [450, 180, 45, 60],
+                    backgroundColor: [
+                        'rgba(220, 38, 38, 0.8)',
+                        'rgba(234, 88, 12, 0.8)',
+                        'rgba(5, 150, 105, 0.8)',
+                        'rgba(5, 150, 105, 0.6)',
+                        
+                    ],
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f5f5f4' },
+                        title: { display: true, text: 'μg/m³' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Skills Radar
+        const ctxSkills = document.getElementById('skillsChart').getContext('2d');
+        new Chart(ctxSkills, {
+            type: 'radar',
+            data: {
+                labels: ['Field Sampling', 'Lab Analysis', 'R Programming', 'GIS/RS', 'Scientific Writing', 'Data Viz'],
+                datasets: [{
+                    label: 'Proficiency',
+                    data: [95, 85, 90, 88, 82, 85],
+                    fill: true,
+                    backgroundColor: 'rgba(5, 150, 105, 0.2)',
+                    borderColor: '#059669',
+                    pointBackgroundColor: '#059669',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#059669'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: '#e5e5e5' },
+                        grid: { color: '#e5e5e5' },
+                        pointLabels: {
+                            font: { size: 10 },
+                            color: '#57534e'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                }
+            }
+        });
+
+        // Water Quality Line Chart
+        const ctxWater = document.getElementById('waterChart').getContext('2d');
+        new Chart(ctxWater, {
+            type: 'line',
+            data: {
+                labels: ['pH', 'Temp', 'DO', 'Conductivity', 'TDS', 'Turbidity'],
+                datasets: [{
+                    label: 'Phoksundo Lake',
+                    data: [7.2, 12, 8.5, 45, 120, 0.8],
+                    borderColor: '#0c4a6e',
+                    backgroundColor: 'rgba(12, 74, 110, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'WHO Standards',
+                    data: [7.0, 15, 7.0, 50, 150, 5.0],
+                    borderColor: '#c2410c',
+                    borderDash: [5, 5],
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { grid: { color: '#f5f5f4' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Initialize icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
